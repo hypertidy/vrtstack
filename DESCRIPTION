@@ -1,0 +1,25 @@
+Package: vrtstack
+Title: Create GDAL Multidimensional VRTs from 2D Raster Collections
+Version: 0.1.0
+Authors@R: 
+    person("Michael", "Sumner", , "mdsumner@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-2471-7511"))
+Description: Stack 2D rasters (COGs, GeoTIFFs, etc.) along a new dimension,
+    producing GDAL Multidimensional VRT files. This enables treating a 
+    collection of 2D rasters as a single multidimensional array, readable 
+    by GDAL's multidim API, xarray backends (gdx, xgdal), and other tools.
+    Supports regular axes (start + increment), explicit values, and 
+    automatic extraction of dimension values from filenames using regex
+    patterns with optional date/time parsing.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports:
+    gdalraster
+Suggests:
+    vapour,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+URL: https://github.com/hypertidy/vrtstack
+BugReports: https://github.com/hypertidy/vrtstack/issues
