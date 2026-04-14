@@ -20,11 +20,22 @@ for (i in seq_len(nd)) {
 
 }
 
-print(dm$GetIndexingVariable())
+# [1] "/time"
+# [1] 8717
+# [1] "/y"
+# [1] 17999
+# [1] "/x"
+# [1] 36000
+
+
+print(ivar <- dm$GetIndexingVariable())
+#<osgeo.gdal.MDArray; proxy of <Swig Object of type 'GDALMDArrayHS *' at 0x73c8bebca0d0> >
 
 spec <- "[0:2,8000:8100,0:200]"
 arr$AdviseRead(c(0L, 8000L, 0L), c(2L, 100L, 200L))
 v <- arr$GetView(spec)
 m <- v$ReadAsArray()
 dim(m)
+#[1]   2 100 200
+
 ximage::ximage(m[1,,])
