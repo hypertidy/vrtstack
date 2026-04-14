@@ -5,6 +5,10 @@
 
 Stack 2D rasters along a new dimension, producing GDAL Multidimensional VRT files.
 
+See a real example in "./example.R" where we generate MDIM VRT in a one line call, it parses the date from the file URIs. (Write that to textxml.vrt 
+for later reuse). 
+
+
 ## The Problem
 
 You have a directory of COGs or GeoTIFFs representing slices along some dimension:
