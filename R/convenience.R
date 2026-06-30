@@ -18,7 +18,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun
+#' \dontrun{
 #' # Daily temperature files: temp_20230101.tif, temp_20230102.tif, ...
 #' vrt_time_stack(
 #'   files = list.files(pattern = "temp_\\d{8}\\.tif$"),

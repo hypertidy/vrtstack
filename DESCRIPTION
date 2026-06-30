@@ -1,6 +1,6 @@
 Package: vrtstack
 Title: Create GDAL Multidimensional VRTs from 2D Raster Collections
-Version: 0.1.0
+Version: 0.1.0.9001
 Authors@R: 
     person("Michael", "Sumner", , "mdsumner@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-2471-7511"))
@@ -14,7 +14,6 @@ Description: Stack 2D rasters (COGs, GeoTIFFs, etc.) along a new dimension,
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports:
     gdalraster
 Suggests:
@@ -23,3 +22,4 @@ Suggests:
 Config/testthat/edition: 3
 URL: https://github.com/hypertidy/vrtstack
 BugReports: https://github.com/hypertidy/vrtstack/issues
+Config/roxygen2/version: 8.0.0

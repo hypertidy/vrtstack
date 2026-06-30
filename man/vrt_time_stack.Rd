@@ -38,3 +38,20 @@ Path to VRT file (invisibly), or XML string if \code{output} is NULL.
 A convenience wrapper for \code{\link[=gdal_mdim_stack]{gdal_mdim_stack()}} tailored for time series data.
 Extracts dates from filenames and encodes them as numeric offsets from an origin.
 }
+\examples{
+\dontrun{
+# Daily temperature files: temp_20230101.tif, temp_20230102.tif, ...
+vrt_time_stack(
+  files = list.files(pattern = "temp_\\\\d{8}\\\\.tif$"),
+  output = "temperature_timeseries.vrt"
+)
+
+# Custom pattern for ISO dates: data_2023-01-15.tif
+vrt_time_stack(
+  files = my_files,
+  pattern = "(\\\\d{4}-\\\\d{2}-\\\\d{2})",
+  format = "\%Y-\%m-\%d",
+  output = "timeseries.vrt"
+)
+}
+}

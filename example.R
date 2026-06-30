@@ -1,3 +1,12 @@
+## OISST
+#' f <- raadtools::sstfiles()
+#' #vrt <- vrtstack(<files>, concat = "(\\d{8})", parse_format = "%Y%m%d",
+#' #origin = "1978-01-01", unit = "days",   # must match the template
+#' #template = TRUE, concat_dim = "time")
+#'
+
+## GHRSST
+
 files <- arrow::read_parquet("https://data.source.coop/ausantarctic/ghrsst-mur-v2/ghrsst-mur-v2.parquet")
 st <- vrt_time_stack(sprintf("/vsicurl/%s", files$assets$analysed_sst$href[1:2]), array_name = "analysed_sst")
 cat(st)
@@ -6,10 +15,9 @@ cat(st)
 st <- vrt_time_stack(sprintf("/vsicurl/%s", files$assets$analysed_sst$href), array_name = "analysed_sst")
 
 library(reticulate)
-use_python("/usr/bin/python3")
-gdal <- import("osgeo.gdal")
+use_python("/usr/bin/python3gdal <- import("osgeo.gdal")
 gdal$UseExceptions()
-ds <- gdal$OpenEx(st, gdal$OF_MULTIDIM_RASTER)
+ds <- gdal$OpenEx("/vsicurl/https://github.com/hypertidy/vrtstack/raw/refs/heads/main/inst/examples/ghrsst-tif-mdim.vrt", gdal$OF_MULTIDIM_RASTER)
 rg <- ds$GetRootGroup()
 arr <- rg$OpenMDArray("analysed_sst")
 nd <- arr$GetDimensionCount()

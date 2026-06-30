@@ -1,2 +1,5 @@
 ^vrtstack\.Rproj$
 ^\.Rproj\.user$
+^\.positai$
+^\.claude$
+^example.R$
