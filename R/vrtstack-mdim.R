@@ -76,7 +76,8 @@ vrtstack <- function(files,
 
   ## template path -- obtain recipe XML
   xml <- if (isTRUE(template)) {
-    mdim_mosaic_xml(utils::head(files, n_template))
+    #mdim_mosaic_xml(utils::head(files, n_template))
+    xml <- mdim_recipe_xml(files, n_template = n_template)
   } else if (grepl("<VRTDataset", template, fixed = TRUE)) {
     template                       # already an XML string
   } else {
