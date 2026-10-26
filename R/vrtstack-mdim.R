@@ -144,19 +144,42 @@ mdim_template_extend <- function(xml, files, concat_values = NULL,
 
   ## --- rewrite the concat coordinate array values -------------------------
   carr <- xml2::xml_find_first(grp, sprintf("./Array[@name='%s']", concat_dim))
-  iv   <- xml2::xml_find_first(carr, "./InlineValues")
+  if (inherits(carr, "xml_missing"))
+    stop("Concat dimension '", concat_dim,
+         "' has no coordinate array of the same name to write values into.")
+  iv  <- xml2::xml_find_first(carr, "./InlineValues")
+  rsv <- xml2::xml_find_first(carr, "./RegularlySpacedValues")
+
   if (!is.null(concat_values)) {
     stopifnot(length(concat_values) == n)
     if (inherits(concat_values, c("Date", "POSIXt")))
       stop("concat_values must be numbers in the coordinate's own units ",
            "(e.g. days-since-epoch), not Date/POSIXct. Encode first via ",
            "resolve_concat(origin=, unit=) or read them from the files.")
-    xml2::xml_text(iv) <- paste(format(concat_values, scientific = FALSE,
-                                       trim = TRUE), collapse = " ")
-    if (!is.na(xml2::xml_attr(iv, "count")))
-      xml2::xml_set_attr(iv, "count", n)
-  } else if (length(xml2::xml_text(iv) |> strsplit("\\s+") |> unlist()) != n) {
-    stop("concat_values is NULL but template values do not match length(files).")
+    vals_txt <- paste(format(concat_values, scientific = FALSE, trim = TRUE),
+                      collapse = " ")
+    if (!inherits(iv, "xml_missing")) {
+      xml2::xml_text(iv) <- vals_txt
+      if (!is.na(xml2::xml_attr(iv, "count")))
+        xml2::xml_set_attr(iv, "count", n)
+    } else if (!inherits(rsv, "xml_missing")) {
+      ## explicit values for a regularly-spaced axis: switch it to inline
+      xml2::xml_remove(rsv)
+      xml2::xml_add_child(carr, "InlineValues", vals_txt)
+    } else {
+      stop("Coordinate array '", concat_dim, "' has neither <InlineValues> ",
+           "nor <RegularlySpacedValues> to update.")
+    }
+  } else {
+    ## no explicit values: inline values must already match the file count;
+    ## a regularly-spaced axis follows the (already updated) dimension size.
+    if (!inherits(iv, "xml_missing")) {
+      if (length(unlist(strsplit(trimws(xml2::xml_text(iv)), "\\s+"))) != n)
+        stop("concat_values is NULL but template values do not match length(files).")
+    } else if (inherits(rsv, "xml_missing")) {
+      stop("Coordinate array '", concat_dim,
+           "' has no values to validate; pass concat_values.")
+    }
   }
 
   ## --- regenerate sources for every data array ----------------------------

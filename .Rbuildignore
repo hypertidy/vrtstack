@@ -1,5 +1,9 @@
 ^vrtstack\.Rproj$
 ^\.Rproj\.user$
 ^\.positai$
+^\.posit$
 ^\.claude$
+^\.github$
+^\.pytest_cache$
+^__pycache__$
 ^example.R$
