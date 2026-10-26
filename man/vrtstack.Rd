@@ -52,10 +52,10 @@ resolver:
 }
 \details{
 \itemize{
-\item \strong{from-scratch} (\code{template = NULL}) — the original GeoTIFF/COG path. Each
+\item \strong{from-scratch} (\code{template = NULL}) - the original GeoTIFF/COG path. Each
 2D source contributes one slab of a \emph{single} new 3D array. Sources use the
 classic \verb{<SourceBand>} + \verb{<SourceTranspose>} form.
-\item \strong{template-extend} (\verb{template = <vrt>} or \code{template = TRUE}) — for
+\item \strong{template-extend} (\verb{template = <vrt>} or \code{template = TRUE}) - for
 mdim-recognised sources (NetCDF/Zarr/HDF5) that may carry \emph{several} arrays
 (OISST: anom/err/ice/sst). A small "first-n" mdim VRT is taken as the
 recipe, and the full file set is fleshed out by re-parameterising only the

@@ -4,10 +4,10 @@
 #' sources along one axis. Two construction paths share a single concat-axis
 #' resolver:
 #'
-#' * **from-scratch** (`template = NULL`) — the original GeoTIFF/COG path. Each
+#' * **from-scratch** (`template = NULL`) - the original GeoTIFF/COG path. Each
 #'   2D source contributes one slab of a *single* new 3D array. Sources use the
 #'   classic `<SourceBand>` + `<SourceTranspose>` form.
-#' * **template-extend** (`template = <vrt>` or `template = TRUE`) — for
+#' * **template-extend** (`template = <vrt>` or `template = TRUE`) - for
 #'   mdim-recognised sources (NetCDF/Zarr/HDF5) that may carry *several* arrays
 #'   (OISST: anom/err/ice/sst). A small "first-n" mdim VRT is taken as the
 #'   recipe, and the full file set is fleshed out by re-parameterising only the
