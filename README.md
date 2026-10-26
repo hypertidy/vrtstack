@@ -1,6 +1,7 @@
 # vrtstack
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/hypertidy/vrtstack/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hypertidy/vrtstack/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 Stack 2D rasters along a new dimension, producing GDAL Multidimensional VRT files.
