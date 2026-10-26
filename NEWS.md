@@ -1,6 +1,15 @@
-# vrtstack (development version)
+# vrtstack 0.2.0
 
 ## Bug fixes
+
+* `gdal_mdim_stack()` no longer derives the data-array name from a bare common
+  filename prefix, which could produce a numeric, invalid array name (e.g.
+  `200206` from a shared date). The resolver now takes the variable token from
+  the shared part of the names -- the first identifier word of the common
+  prefix or the last of the common suffix, whichever carries more letters (e.g.
+  `analysed_sst` from GHRSST tiles, `claytotal` from soil layers) -- never a
+  leading-digit name, and falls back to `band1`. An explicit `array_name` still
+  overrides. Band-description-based naming is left as a later option. (#1)
 
 * `gdal_mdim_stack()` now writes a `<SourceSlab offset="0,0,0"
   count="1,nrow,ncol" step="1,1,1"/>` in every source. Without the count,
@@ -15,6 +24,16 @@
 
 
 ## New features
+
+* New `graft_coord_units()` and `graft_group_attrs()` restore metadata that
+  `gdal mdim mosaic` drops from a recipe: coordinate-array units (CF `units`,
+  which the netCDF driver lifts into the array Unit rather than an attribute)
+  and invariant root-group provenance attributes (title, source, references).
+  Both are idempotent and read the values from one source via `gdal mdim info`,
+  or from a supplied `units=`/`attrs=` vector that needs no GDAL. They are wired
+  into the `template = TRUE` path of `vrtstack()` via an internal
+  `mdim_recipe_xml()`, and become no-ops once GDAL propagates the metadata
+  itself.
 
 * New `vrtstack()` is a single entry point with two construction paths that
   share one concat-axis resolver:
@@ -55,6 +74,15 @@
   message: coordinate values must already be in the array's declared units
   (e.g. days-since-epoch). Encode them first via `resolve_concat(origin=, unit=)`
   or read them from the source files.
+
+## Packaging
+
+* Declared `xml2`, `stringr`, `jsonlite` and `utils` in `Imports` (they were
+  used but undeclared, an `R CMD check` error).
+
+* Added continuous integration: a standard `R-CMD-check` matrix, and a canary
+  job that checks against a development GDAL build (hypertidy
+  `gdal-r-python:dev`), so changes in GDAL's multidim surface are caught early.
 
 ## vrtstack (0.1.0)
 
