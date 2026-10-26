@@ -3,3 +3,4 @@
 ^\.positai$
 ^\.claude$
 ^example.R$
+^\.posit/assistant$

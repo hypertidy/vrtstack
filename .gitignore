@@ -5,3 +5,5 @@
 .DS_Store
 .quarto
 .positai
+__pycache__
+.posit/assistant
