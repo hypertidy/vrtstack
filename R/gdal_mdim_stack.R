@@ -228,7 +228,7 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
 
   if (any(is.na(vals))) {
     bad <- basenames[is.na(vals)]
-    stop("Pattern did not match: ", paste(head(bad, 3), collapse = ", "))
+    stop("Pattern did not match: ", paste(utils::head(bad, 3), collapse = ", "))
   }
 
   # Parse as date/time if format provided
@@ -264,7 +264,7 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
 #' @noRd
 .get_raster_info <- function(file) {
   if (requireNamespace("gdalraster", quietly = TRUE)) {
-    ds <- new(gdalraster::GDALRaster, file, TRUE)
+    ds <- methods::new(gdalraster::GDALRaster, file, TRUE)
     on.exit(ds$close())
     return(list(
       ncol = ds$getRasterXSize(),

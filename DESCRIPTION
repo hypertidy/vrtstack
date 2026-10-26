@@ -18,6 +18,7 @@ Depends: R (>= 4.1.0)
 Imports:
     gdalraster,
     jsonlite,
+    methods,
     stringr,
     utils,
     xml2
