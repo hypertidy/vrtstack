@@ -430,7 +430,15 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
     lines <- c(lines, sprintf('      <NoDataValue>%s</NoDataValue>', ref_info$nodata))
   }
 
-  # Sources
+  # Sources. Each states its extent in a <SourceSlab>: without the count,
+  # GDAL opens every source, in order, to learn its shape on each read
+  # through the VRT (a HEAD and a header GET per /vsicurl/ COG). With it,
+  # a read opens only the sources it touches. The count is in the
+  # transposed (stack, y, x) order, so 1, nrow, ncol.
+  source_slab <- sprintf(
+    '        <SourceSlab offset="0,0,0" count="1,%d,%d" step="1,1,1"/>',
+    nrow, ncol
+  )
   for (i in seq_along(files)) {
     src <- files[i]
     if (grepl("^https?://", src)) src <- paste0("/vsicurl/", src)
@@ -439,6 +447,7 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
       sprintf('        <SourceFilename>%s</SourceFilename>', .xml_escape(src)),
       '        <SourceBand>1</SourceBand>',
       '        <SourceTranspose>-1,0,1</SourceTranspose>',
+      source_slab,
       sprintf('        <DestSlab offset="%d,0,0"/>', i - 1),
       '      </Source>'
     )
