@@ -32,6 +32,11 @@
 #' @param n_template Files used to build the auto-generated recipe when
 #'   `template = TRUE`. Default 10.
 #' @param parse_format,origin,unit Passed to [resolve_concat()] for date parsing.
+#' @param metadata_from Which source donates the coordinate units and root-group
+#'   provenance restored onto an auto-generated recipe (`template = TRUE`): one
+#'   of `"first"` (default), `"last"`, or an explicit source path. Ignored when
+#'   `template` is a supplied VRT or XML string, which already carries its own
+#'   metadata.
 #' @param output Output VRT path, or `NULL` to return the XML string.
 #' @param ... Passed to the from-scratch builder (`dim_type`, `dim_unit`,
 #'   `array_name`, etc.) and ignored on the template path.
@@ -51,6 +56,7 @@ vrtstack <- function(files,
                      parse_format = NULL,
                      origin = NULL,
                      unit = "days",
+                     metadata_from = "first",
                      output = NULL,
                      ...) {
   stopifnot(length(files) > 0L)
@@ -76,8 +82,7 @@ vrtstack <- function(files,
 
   ## template path -- obtain recipe XML
   xml <- if (isTRUE(template)) {
-    #mdim_mosaic_xml(utils::head(files, n_template))
-    xml <- mdim_recipe_xml(files, n_template = n_template)
+    mdim_recipe_xml(files, n_template = n_template, metadata_from = metadata_from)
   } else if (grepl("<VRTDataset", template, fixed = TRUE)) {
     template                       # already an XML string
   } else {
