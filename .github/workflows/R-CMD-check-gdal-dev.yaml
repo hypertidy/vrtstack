@@ -1,0 +1,46 @@
+# Canary: check against a bleeding-edge GDAL build, so changes in GDAL's
+# multidim VRT / mdim CLI surface are caught early. Runs in the hypertidy
+# gdal-r-python image (R + Python + development GDAL). The grafts self-retire
+# once GDAL propagates the metadata itself, so this is where that would show up.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 13 * * 1'   # weekly, Monday
+
+name: R-CMD-check-gdal-dev.yaml
+
+permissions: read-all
+
+jobs:
+  gdal-dev:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/hypertidy/gdal-r-python:dev
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        shell: Rscript {0}
+        run: |
+          install.packages(c("remotes", "rcmdcheck"))
+          remotes::install_deps(dependencies = TRUE)
+
+      - name: GDAL version
+        shell: Rscript {0}
+        run: |
+          cat(gdalraster::gdal_version(), sep = "\n")
+
+      - name: R CMD check
+        shell: Rscript {0}
+        run: |
+          rcmdcheck::rcmdcheck(
+            args = c("--no-manual", "--as-cran"),
+            error_on = "warning",
+            check_dir = "check"
+          )

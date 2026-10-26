@@ -175,8 +175,7 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
 
   # --- Determine array name ---
   if (is.null(array_name)) {
-    array_name <- .common_prefix(basename(files))
-    if (nchar(array_name) == 0) array_name <- "data"
+    array_name <- .array_name_from_files(files)
   }
 
   # --- Build unit string for temporal ---
@@ -319,16 +318,54 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
 
 
 #' @noRd
-.common_prefix <- function(strings) {
-  if (length(strings) < 2) return(if (length(strings)) strings[1] else "")
-  chars <- strsplit(strings, "")
-  min_len <- min(lengths(chars))
-  prefix <- ""
-  for (i in seq_len(min_len)) {
-    ch <- unique(vapply(chars, `[`, character(1), i))
-    if (length(ch) == 1) prefix <- paste0(prefix, ch) else break
+.common_affix <- function(strings, side = c("prefix", "suffix")) {
+  side <- match.arg(side)
+  if (!length(strings)) return("")
+  rev_str <- function(s) vapply(s, function(x)
+    paste(rev(strsplit(x, "", fixed = TRUE)[[1]]), collapse = ""),
+    character(1), USE.NAMES = FALSE)
+  if (side == "suffix") strings <- rev_str(strings)
+  if (length(strings) < 2) {
+    out <- strings[1]
+  } else {
+    chars <- strsplit(strings, "", fixed = TRUE)
+    min_len <- min(lengths(chars))
+    out <- ""
+    for (i in seq_len(min_len)) {
+      ch <- unique(vapply(chars, `[`, character(1), i))
+      if (length(ch) == 1) out <- paste0(out, ch) else break
+    }
   }
-  gsub("[^a-zA-Z0-9]+$", "", prefix)
+  if (side == "suffix") out <- rev_str(out)
+  out
+}
+
+# Derive a data-array name from a file collection. The shared part of the
+# names carries the variable (e.g. GHRSST "...analysed_sst.tif"); the varying
+# part is the index (a date, a depth). Take the first identifier word of the
+# common prefix and the last of the common suffix, drop trailing digits, and
+# keep whichever has the most letters. A collection whose only shared part is a
+# date (leading digits) yields no valid identifier that way, so the result is
+# "band1" rather than a numeric, invalid name. An explicit `array_name` always
+# overrides this.
+#' @noRd
+.array_name_from_files <- function(files) {
+  bn <- sub("\\.[^.]*$", "", basename(files))        # drop extension
+  first_word <- function(s) {
+    m <- regmatches(s, regexpr("[A-Za-z][A-Za-z0-9_]*", s))
+    if (length(m)) m else ""
+  }
+  last_word <- function(s) {
+    m <- regmatches(s, gregexpr("[A-Za-z][A-Za-z0-9_]*", s))[[1]]
+    if (length(m)) m[length(m)] else ""
+  }
+  tidy <- function(t) sub("^_+|_+$", "", sub("[_0-9]+$", "", t))
+
+  cand <- c(tidy(first_word(.common_affix(bn, "prefix"))),
+            tidy(last_word(.common_affix(bn, "suffix"))))
+  cand <- cand[grepl("^[A-Za-z][A-Za-z0-9_]*$", cand)]
+  if (!length(cand)) return("band1")
+  cand[[which.max(nchar(gsub("[^A-Za-z]", "", cand)))]]
 }
 
 

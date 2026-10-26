@@ -1,6 +1,6 @@
 Package: vrtstack
 Title: Create GDAL Multidimensional VRTs from 2D Raster Collections
-Version: 0.1.0.9001
+Version: 0.2.0
 Authors@R: 
     person("Michael", "Sumner", , "mdsumner@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-2471-7511"))
@@ -16,7 +16,11 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.1.0)
 Imports:
-    gdalraster
+    gdalraster,
+    jsonlite,
+    stringr,
+    utils,
+    xml2
 Suggests:
     vapour,
     testthat (>= 3.0.0)

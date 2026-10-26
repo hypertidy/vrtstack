@@ -63,12 +63,7 @@ graft_coord_units <- function(x, source = NULL, units = NULL) {
 #' one. Recurses nested groups.
 #' @keywords internal
 mdim_source_units <- function(source) {
-  stopifnot(requireNamespace("gdalraster", quietly = TRUE),
-            requireNamespace("jsonlite",  quietly = TRUE))
-  ## `gdal mdim info` emits JSON; capture it. Adjust to your gdalraster's
-  ## gdal_run result accessor if it does not return stdout as a string.
-  txt <- gdalraster::gdal_run("mdim info", c(source))$output()  # <- confirm accessor
-  info <- jsonlite::fromJSON(txt, simplifyVector = FALSE)
+  info <- jsonlite::fromJSON(.mdim_info_json(source), simplifyVector = FALSE)
 
   out <- character()
   walk <- function(node) {
@@ -80,6 +75,19 @@ mdim_source_units <- function(source) {
   }
   walk(info)
   out
+}
+
+#' JSON report of a multidimensional source, via `gdal mdim info`
+#'
+#' For an info-type algorithm `gdal_run()$output()` returns the report string
+#' directly; the object is released once the string is in hand.
+#' @keywords internal
+.mdim_info_json <- function(source) {
+  stopifnot(requireNamespace("gdalraster", quietly = TRUE),
+            requireNamespace("jsonlite",  quietly = TRUE))
+  alg <- gdalraster::gdal_run("mdim info", c("--input", source))
+  on.exit(alg$release(), add = TRUE)
+  alg$output()
 }
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
@@ -137,10 +145,7 @@ graft_group_attrs <- function(x, source = NULL, attrs = NULL,
 #' Root-group (global) string attributes of a source, via `gdal mdim info`
 #' @keywords internal
 mdim_source_globals <- function(source) {
-  stopifnot(requireNamespace("gdalraster", quietly = TRUE),
-            requireNamespace("jsonlite",  quietly = TRUE))
-  txt  <- gdalraster::gdal_run("mdim info", c(source))$output()  # confirm accessor
-  info <- jsonlite::fromJSON(txt, simplifyVector = FALSE)
+  info <- jsonlite::fromJSON(.mdim_info_json(source), simplifyVector = FALSE)
   a <- info[["attributes"]] %||% list()
   vapply(a, function(v) if (is.character(v) || is.numeric(v))
     as.character(v) else NA_character_, character(1))
