@@ -13,15 +13,36 @@
 
 #' Assemble a first-n mdim recipe, with dropped coordinate units and root-group
 #' provenance attributes restored
+#'
+#' @param metadata_from Which source donates the restored metadata: `"first"`,
+#'   `"last"`, or an explicit source path. Units are invariant across the stack
+#'   so the choice only affects the provenance globals.
 #' @keywords internal
-mdim_recipe_xml <- function(files, n_template = 10, enrich = TRUE) {
+mdim_recipe_xml <- function(files, n_template = 10, enrich = TRUE,
+                            metadata_from = "first") {
   x <- mdim_mosaic_xml(utils::head(files, n_template))
   if (isTRUE(enrich)) {
-    doc <- graft_coord_units(x, source = files[[1L]])
-    doc <- graft_group_attrs(doc, source = files[[1L]])
+    donor <- .resolve_donor(files, metadata_from)
+    doc <- graft_coord_units(x, source = donor)
+    doc <- graft_group_attrs(doc, source = donor)
     x <- as.character(doc)
   }
   x
+}
+
+#' Resolve the metadata donor source from a `metadata_from` spec
+#'
+#' `"first"`/`"last"` pick an end of `files`; any other string is taken as an
+#' explicit source path and used as given (it need not be one of `files`).
+#' @keywords internal
+.resolve_donor <- function(files, metadata_from = "first") {
+  if (length(metadata_from) != 1L || is.na(metadata_from) ||
+      !nzchar(metadata_from))
+    stop("`metadata_from` must be \"first\", \"last\", or a single source path.")
+  switch(metadata_from,
+         first = files[[1L]],
+         last  = files[[length(files)]],
+         metadata_from)            # explicit path, used as-is
 }
 
 

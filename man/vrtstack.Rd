@@ -13,6 +13,7 @@ vrtstack(
   parse_format = NULL,
   origin = NULL,
   unit = "days",
+  metadata_from = "first",
   output = NULL,
   ...
 )
@@ -36,6 +37,12 @@ via \verb{gdal mdim mosaic}.}
 \code{template = TRUE}. Default 10.}
 
 \item{parse_format, origin, unit}{Passed to \code{\link[=resolve_concat]{resolve_concat()}} for date parsing.}
+
+\item{metadata_from}{Which source donates the coordinate units and root-group
+provenance restored onto an auto-generated recipe (\code{template = TRUE}): one
+of \code{"first"} (default), \code{"last"}, or an explicit source path. Ignored when
+\code{template} is a supplied VRT or XML string, which already carries its own
+metadata.}
 
 \item{output}{Output VRT path, or \code{NULL} to return the XML string.}
 
