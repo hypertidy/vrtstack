@@ -16,7 +16,11 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.1.0)
 Imports:
-    gdalraster
+    gdalraster,
+    jsonlite,
+    stringr,
+    utils,
+    xml2
 Suggests:
     vapour,
     testthat (>= 3.0.0)
