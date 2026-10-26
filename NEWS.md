@@ -1,5 +1,18 @@
 # vrtstack (development version)
 
+## Bug fixes
+
+* `gdal_mdim_stack()` now writes a `<SourceSlab offset="0,0,0"
+  count="1,nrow,ncol" step="1,1,1"/>` in every source. Without the count,
+  GDAL opens every source, in order, to learn its shape on each read
+  through the VRT (a HEAD and a header GET per `/vsicurl/` COG), so even a
+  one-step read of a long remote stack touched every file. With it, a read
+  opens only the sources it covers. Same finding as
+  mdsumner/raad.virtualize#14; see also hypertidy/gdalxarray#39, which
+  stops sparse selections being widened to a covering read. The
+  template-extend path in `vrtstack()` already copied the count from its
+  template. Tests added (`tests/testthat/test-sourceslab.R`).
+
 
 ## New features
 
