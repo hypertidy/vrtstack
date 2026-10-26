@@ -1,3 +1,24 @@
+# Skip a test when the installed GDAL lacks the unified CLI algorithms that
+# gdal_run() drives (verify_vrt, the mdim mosaic/info paths). That interface
+# needs GDAL >= 3.11.3; older builds error "gdal_run() requires GDAL >= ...".
+# gdalraster's version accessor return shape varies, so parse defensively.
+skip_if_no_gdal_cli <- function() {
+  testthat::skip_if_not_installed("gdalraster")
+  ok <- tryCatch({
+    v <- as.character(gdalraster::gdal_version())[1]
+    num <- suppressWarnings(as.integer(v))          # some builds: "3110300"
+    if (is.na(num)) {
+      m <- regmatches(v, regexpr("[0-9]+\\.[0-9]+\\.[0-9]+", v))  # "GDAL 3.11.3"
+      if (length(m)) {
+        p <- as.integer(strsplit(m, ".", fixed = TRUE)[[1]])
+        num <- p[1] * 1000000L + p[2] * 10000L + p[3] * 100L
+      }
+    }
+    !is.na(num) && num >= 3110300L
+  }, error = function(e) FALSE)
+  if (!ok) testthat::skip("gdal_run() requires GDAL >= 3.11.3")
+}
+
 # Small on-disk GeoTIFFs to exercise the file-probing paths without network.
 # EPSG:4326, 0.25-degree grid, single Int16 band, optional NoData.
 make_tifs <- function(names,

@@ -83,7 +83,7 @@ test_that("a multi-step file contributes a single Source", {
 })
 
 test_that("an emitted VRT opens in GDAL with the declared grid and metadata", {
-  skip_if_not_installed("gdalraster")
+  skip_if_no_gdal_cli()                           # verify_vrt needs gdal_run
   skip_if_not_installed("jsonlite")
   tifs <- make_tifs(c("a.tif", "b.tif"))          # 8x6 Int16 sources
   s <- mdim_sources(as.Date(c("2024-01-02", "2024-01-01")),
@@ -103,7 +103,7 @@ test_that("an emitted VRT opens in GDAL with the declared grid and metadata", {
 })
 
 test_that("verify_vrt returns mdim info for a valid VRT", {
-  skip_if_not_installed("gdalraster")
+  skip_if_no_gdal_cli()                           # verify_vrt needs gdal_run
   tifs <- make_tifs(c("v1.tif", "v2.tif"))
   s <- mdim_sources(as.Date(c("2024-01-01", "2024-01-02")),
                     tifs, "1", "band", source_view = "[newaxis,...]")
