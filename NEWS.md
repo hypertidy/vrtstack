@@ -1,3 +1,26 @@
+# vrtstack (development version)
+
+## New features
+
+* `vrtstack()` gains `metadata_from` (`"first"`, `"last"`, or an explicit source
+  path) to choose which source donates the coordinate units and root-group
+  provenance restored onto an auto-generated recipe (`template = TRUE`).
+
+* The concat dimension may be any axis, not only axis 0, and need not be named
+  `"time"`: `mdim_template_extend()` takes the axis position from `DimensionRef`
+  order. A regularly-spaced concat coordinate is converted to explicit inline
+  values when `concat_values` are supplied.
+
+## Bug fixes
+
+* `mdim_template_extend()` now gives a clear error when the concat dimension has
+  no coordinate array of the same name, instead of an opaque xml node-type
+  error, and validates inline-vs-regular coordinate values robustly.
+
+## Packaging
+
+* `.Rbuildignore` now excludes `.github` and local scratch directories.
+
 # vrtstack 0.2.0
 
 ## Bug fixes
@@ -37,9 +60,9 @@
 
 * New `vrtstack()` is a single entry point with two construction paths that
   share one concat-axis resolver:
-  - **from-scratch** (`template = NULL`) — the existing GeoTIFF/COG behaviour,
+  - **from-scratch** (`template = NULL`) - the existing GeoTIFF/COG behaviour,
     stacking 2D sources into a single new 3D array.
-  - **template-extend** (`template = <vrt>` or `template = TRUE`) — fleshes out
+  - **template-extend** (`template = <vrt>` or `template = TRUE`) - fleshes out
     a small "first-n" multidimensional VRT to a full file set, re-parameterising
     only the concat dimension and the per-array `<Source>` lists. Coordinate
     arrays, slab geometry, and per-array scale/offset/unit/attributes are carried

@@ -54,13 +54,24 @@ test_that("a non-axis-0, non-time concat dimension extends on its own axis", {
     xml2::xml_find_all(grp, "./Array[@name='v']//SourceSlab"), "count") == "1,1,3,4"))
 })
 
-test_that("the concat dimension is found by size when the name is absent", {
-  # drop the name hint: concat_dim defaults to "time" (size 1), which does not
-  # match; the fallback picks the dimension whose size equals the source count.
+test_that("the concat dimension is found by size when the name does not match", {
+  # concat_dim names nothing in the template, so the fallback picks the
+  # dimension whose size equals the source count (zlev, size 2).
   doc <- mdim_template_extend(zlev_template(), c("d0.nc", "d1.nc"),
-                              concat_values = c(0, 10))
+                              concat_values = c(0, 10), concat_dim = "absent")
   grp <- xml2::xml_find_first(doc, ".//Group")
-  # the size-2 dimension (zlev) is the one whose size matches the source count
   expect_equal(xml2::xml_attr(
     xml2::xml_find_first(grp, "./Dimension[@name='zlev']"), "size"), "2")
+  expect_equal(xml2::xml_text(
+    xml2::xml_find_first(grp, "./Array[@name='zlev']/InlineValues")), "0 10")
+})
+
+test_that("a concat dimension with no coordinate array errors clearly", {
+  # the fixture has a 'time' dimension but no 'time' coordinate array; naming
+  # it as the concat dim must give a clear error, not an xml node-type crash.
+  expect_error(
+    mdim_template_extend(zlev_template(), c("a.nc"),
+                         concat_values = 0, concat_dim = "time"),
+    "no coordinate array"
+  )
 })
