@@ -262,6 +262,12 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
 
 
 #' @noRd
+.has_value <- function(x) !is.null(x) && length(x) == 1L && !is.na(x)
+.num_or_na <- function(x) {
+  if (!.has_value(x)) return(NA_real_)
+  suppressWarnings(as.numeric(x))
+}
+
 .get_raster_info <- function(file) {
   if (requireNamespace("gdalraster", quietly = TRUE)) {
     ds <- methods::new(gdalraster::GDALRaster, file, TRUE)
@@ -273,7 +279,10 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
       srs = ds$getProjectionRef(),
       dtype = ds$getDataTypeName(1),
       nodata = ds$getNoDataValue(1),
-      blocksize = ds$getBlockSize(1)
+      blocksize = ds$getBlockSize(1),
+      scale = ds$getScale(1),
+      offset = ds$getOffset(1),
+      unit = ds$getUnitType(1)
     ))
   }
 
@@ -402,10 +411,15 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
   # --- Coordinate arrays ---
   # Stacking dimension
   lines <- c(lines, sprintf('    <Array name="%s">', dim_name))
+  # <Unit> precedes the value carrier in the XSD's Array sequence.
+  unit_line <- if (!is.null(dim_unit)) {
+    sprintf('      <Unit>%s</Unit>', .xml_escape(dim_unit))
+  } else character(0)
   if (use_regular) {
     lines <- c(lines,
       '      <DataType>Float64</DataType>',
       sprintf('      <DimensionRef ref="%s"/>', dim_name),
+      unit_line,
       sprintf('      <RegularlySpacedValues start="%s" increment="%s"/>',
               format(dim_start, scientific = FALSE, trim = TRUE),
               format(dim_increment, scientific = FALSE, trim = TRUE))
@@ -420,11 +434,9 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
     lines <- c(lines,
       sprintf('      <DataType>%s</DataType>', dtype),
       sprintf('      <DimensionRef ref="%s"/>', dim_name),
+      unit_line,
       sprintf('      <InlineValues>%s</InlineValues>', vals_str)
     )
-  }
-  if (!is.null(dim_unit)) {
-    lines <- c(lines, sprintf('      <Unit>%s</Unit>', .xml_escape(dim_unit)))
   }
   lines <- c(lines, '    </Array>')
 
@@ -457,14 +469,31 @@ stopifnot(is.character(dim_name), length(dim_name) == 1)
   )
 
   if (!is.null(ref_info$srs) && nchar(ref_info$srs) > 0) {
+    # Array dims are (stack, y, x): y is dim 2, x is dim 3.
     lines <- c(lines,
-      sprintf('      <SRS dataAxisToSRSAxisMapping="2,1">%s</SRS>',
+      sprintf('      <SRS dataAxisToSRSAxisMapping="%s">%s</SRS>',
+              .srs_axis_mapping(ref_info$srs, y_dim = 2L, x_dim = 3L),
               .xml_escape(ref_info$srs))
     )
   }
 
+  # Unit / NoData / Offset / Scale, in XSD order. The VRT reads source
+  # bytes, so a packed band (e.g. GHRSST MUR analysed_sst: Int16, scale
+  # 0.001, offset 25) needs its scale and offset here or unscaled reads
+  # return raw counts.
+  if (.has_value(ref_info$unit) && nzchar(ref_info$unit)) {
+    lines <- c(lines, sprintf('      <Unit>%s</Unit>', .xml_escape(ref_info$unit)))
+  }
   if (!is.null(ref_info$nodata) && !is.na(ref_info$nodata)) {
     lines <- c(lines, sprintf('      <NoDataValue>%s</NoDataValue>', ref_info$nodata))
+  }
+  scale <- .num_or_na(ref_info$scale)
+  offset <- .num_or_na(ref_info$offset)
+  packed <- (!is.na(scale) && scale != 1) || (!is.na(offset) && offset != 0)
+  if (packed) {
+    lines <- c(lines,
+      sprintf('      <Offset>%.15g</Offset>', if (is.na(offset)) 0 else offset),
+      sprintf('      <Scale>%.15g</Scale>', if (is.na(scale)) 1 else scale))
   }
 
   # Sources. Each states its extent in a <SourceSlab>: without the count,
