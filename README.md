@@ -30,7 +30,7 @@ temperature_20230103.tif
 ...
 ```
 
-You want to treat these as a **single multidimensional array** — selectable by depth or time — without copying data into a new format.
+You want to treat these as a **single multidimensional array** - selectable by depth or time - without copying data into a new format.
 
 ## The Solution
 
@@ -55,6 +55,28 @@ The resulting VRT can be read by:
 - GDAL's multidim API (`gdalmdiminfo`, `gdalmdimtranslate`)
 - Python xarray via [gdx](https://github.com/mdsumner/gdx) or [xgdal](https://github.com/scottyhq/xgdal)
 - Any tool supporting GDAL multidimensional rasters
+
+## Three ways in
+
+`gdal_mdim_stack()` above builds a new dimension from 2D rasters. Two more paths
+cover sources that are already multidimensional, and sources described by a
+catalog:
+
+- **Extend a recipe** (`vrtstack(..., template = TRUE)`): for NetCDF/Zarr/HDF5
+  sources that may carry several arrays at once, take a small "first-n" mdim VRT
+  as a recipe and flesh it out to the full file set, re-writing only the concat
+  dimension and the per-array source lists. `metadata_from` and the
+  `graft_coord_units()` / `graft_group_attrs()` helpers restore coordinate units
+  and provenance that `gdal mdim mosaic` drops.
+- **Emit from a signature** (`emit_mdim_vrt()`): when the grid is known from a
+  catalog, build the VRT from a sources table (`mdim_sources()`) and a grid
+  signature (`mdim_signature()`) without opening a file - "identical grid or
+  refuse". `stac_sufficiency()` checks a STAC item carries the needed fields;
+  `verify_vrt()` round-trips the result through `gdal mdim info`.
+
+The `gdal_run()`-backed paths (`verify_vrt()`, `template = TRUE` recipe
+generation, the metadata grafts) need **GDAL >= 3.11.3**; the pure-XML builders
+work with any GDAL. See `vignette("vrtstack")` for a walk through all three.
 
 ## Key Features
 
@@ -147,7 +169,7 @@ Requires **gdalraster** (or **vapour** as fallback) for reading raster metadata.
 
 ### VirtualiZarr / kerchunk
 
-Similar concept — creating virtual references to chunked data — but for Zarr ecosystems. **vrtstack** creates GDAL VRTs, which integrate with the broader GDAL toolchain and any GDAL-based reader.
+Similar concept - creating virtual references to chunked data - but for Zarr ecosystems. **vrtstack** creates GDAL VRTs, which integrate with the broader GDAL toolchain and any GDAL-based reader.
 
 ### xgdal
 
@@ -156,10 +178,10 @@ Similar concept — creating virtual references to chunked data — but for Zarr
 ### hypertidy ecosystem
 
 Part of the [hypertidy](https://github.com/hypertidy) philosophy: thin, composable tools that work directly with GDAL. See also:
-- **vapour** / **gdalraster** — GDAL bindings for R
-- **grout** — grid tiling specs
-- **vaster** — grid geometry primitives
-- **gdx** — xarray backend for GDAL multidim (Python)
+- **vapour** / **gdalraster** - GDAL bindings for R
+- **grout** - grid tiling specs
+- **vaster** - grid geometry primitives
+- **gdx** - xarray backend for GDAL multidim (Python)
 
 ## License
 MIT

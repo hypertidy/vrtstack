@@ -7,3 +7,6 @@
 ^\.pytest_cache$
 ^__pycache__$
 ^example.R$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

@@ -1,0 +1,146 @@
+---
+title: "Building multidimensional VRTs from raster collections"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Building multidimensional VRTs from raster collections}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE          # illustrative: the GDAL-CLI and network paths below
+)                        # need GDAL >= 3.11.3 and remote access
+```
+
+vrtstack writes GDAL multidimensional VRTs: small XML documents that let a
+collection of rasters be read as one array through any GDAL multidim reader,
+with no data copied. There are three ways in, for three situations.
+
+```{r setup}
+library(vrtstack)
+```
+
+## 1. Stack 2D rasters along a new dimension
+
+The original job: you have 2D rasters (COGs, GeoTIFFs) that are slices of one
+variable, and you want them as a single 3D array. `gdal_mdim_stack()` builds the
+new axis from scratch.
+
+```{r from-scratch}
+# soil layers by depth
+gdal_mdim_stack(
+  files = c("soil_0cm.tif", "soil_30cm.tif", "soil_100cm.tif"),
+  dim_name = "depth",
+  dim_values = c(0, 30, 100),
+  dim_type = "VERTICAL",
+  dim_direction = "DOWN",
+  dim_unit = "cm",
+  output = "soil.vrt"
+)
+```
+
+Evenly spaced values are detected and stored compactly as
+`<RegularlySpacedValues>` rather than a long value list; dimension values can be
+pulled from file names with a one-group regex and parsed as dates; and
+`http(s)://` sources are wrapped in `/vsicurl/` automatically.
+
+```{r from-scratch-time}
+# a daily time series, dates parsed from the file names
+gdal_mdim_stack(
+  files = list.files(pattern = "temp_\\d{8}\\.tif$"),
+  dim_name = "time",
+  dim_values = "(\\d{8})",
+  parse_format = "%Y%m%d",
+  dim_type = "TEMPORAL",
+  time_origin = "1970-01-01",
+  time_unit = "days",
+  output = "temperature.vrt"
+)
+```
+
+The convenience wrappers `vrt_time_stack()`, `vrt_depth_stack()` and
+`vrt_regular_stack()` cover the common cases with shorter calls.
+
+Each source carries a `<SourceSlab>` with an explicit `count`, so a read through
+the VRT opens only the sources it covers rather than every file.
+
+## 2. Extend an existing multidimensional recipe
+
+Some sources are already multidimensional (NetCDF, Zarr, HDF5) and may hold
+several arrays at once. For these, the fastest route is to take a small "first
+few files" VRT as a recipe and flesh it out to the full file set, re-writing
+only the concat dimension and the per-array source lists. Everything else -
+coordinate arrays, slab geometry, per-array scale/offset/unit/attributes - is
+carried through verbatim.
+
+```{r template-extend}
+# `template = TRUE` auto-generates the recipe from the first n files via
+# `gdal mdim mosaic`, then extends it to the whole set.
+vrtstack(
+  files = all_files,              # e.g. thousands of daily NetCDFs
+  concat = "(\\d{8})", parse_format = "%Y%m%d",
+  origin = "1978-01-01", unit = "days",
+  template = TRUE, concat_dim = "time",
+  output = "series.vrt"
+)
+```
+
+The concat dimension need not be the first axis, nor named `"time"`: the axis
+position is read from the recipe. A ready-made recipe can be passed instead of
+`TRUE` (a path or an XML string).
+
+`metadata_from` chooses which source donates the coordinate units and
+root-group provenance restored onto an auto-generated recipe (`"first"`,
+`"last"`, or an explicit path) - a repair for metadata that `gdal mdim mosaic`
+drops. `graft_coord_units()` and `graft_group_attrs()` expose that repair
+directly and are no-ops once the metadata is already present.
+
+## 3. Emit a VRT from a catalog signature
+
+When the grid is known from a catalog (STAC, CMR, or a URL template) rather than
+by opening a file, the emitter path builds the VRT from two plain structures and
+never touches the data: a *sources table* (one row per step) and a *signature*
+(the grid and array metadata for the collection).
+
+```{r emitter}
+src <- mdim_sources(
+  time = as.Date(c("2024-01-01", "2024-01-02")),
+  dsn = c("/vsicurl/.../20240101.tif", "/vsicurl/.../20240102.tif"),
+  source_ref = "1", kind = "band",          # a COG band; use "array" for NetCDF
+  source_view = "[newaxis,...]"             # rank a 2D band up to the 3D cube
+)
+
+sig <- mdim_signature(
+  collection = "demo", variable = "sst",
+  nx = 1440, ny = 720,
+  x0 = 0.125, dx = 0.25, y0 = 89.875, dy = -0.25,
+  srs = "EPSG:4326", dtype = "Int16",
+  nodata = -999, scale = 0.01, unit = "Celsius"
+)
+
+emit_mdim_vrt(src, sig, "demo.vrt")
+```
+
+The contract is "identical grid or refuse": the emitter trusts the signature, so
+a collection whose assets are not on the same grid is a refusal, never a resample.
+`stac_sufficiency()` reports whether a parsed STAC item carries the fields the
+signature needs, and `verify_vrt()` round-trips an emitted VRT through
+`gdal mdim info`.
+
+## GDAL version note
+
+The pure-XML paths - `gdal_mdim_stack()`, `mdim_template_extend()` and
+`emit_mdim_vrt()` writing the document - work with any GDAL that gdalraster
+links. The paths that drive GDAL's unified command-line algorithms through
+`gdalraster::gdal_run()` - `verify_vrt()`, `template = TRUE` recipe generation,
+and the metadata grafts - require **GDAL >= 3.11.3**.
+
+## Reading the result
+
+The VRT opens through any GDAL multidim reader: `gdalmdiminfo` and
+`gdalmdimtranslate` on the command line, `gdalraster` in R, or an xarray GDAL
+backend in Python. Selecting along the new dimension reads only the sources that
+the selection covers.
