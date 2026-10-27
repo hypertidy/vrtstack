@@ -1,0 +1,200 @@
+# Changelog
+
+## vrtstack (development version)
+
+### Documentation
+
+- New vignette
+  [`vignette("vrtstack")`](https://hypertidy.github.io/vrtstack/articles/vrtstack.md)
+  walking the three entry points (from-scratch stacking, recipe
+  extension, catalog emitter), a pkgdown site with a grouped reference
+  index, and a README section covering all three. The GDAL \>= 3.11.3
+  requirement for the `gdal_run()`-backed paths is documented.
+
+### Bug fixes
+
+- [`gdal_mdim_stack()`](https://hypertidy.github.io/vrtstack/reference/gdal_mdim_stack.md)
+  (and the `vrt_*_stack()` wrappers) now copy the source band’s scale,
+  offset and unit type onto the data array. Packed bands such as GHRSST
+  MUR `analysed_sst` (Int16, scale 0.001, offset 25) previously read
+  back as raw counts through the VRT’s unscaled view.
+
+- The `<SRS>` `dataAxisToSRSAxisMapping` is now computed from the CRS’s
+  WKT axis order instead of being fixed at `"2,1"`. For a
+  `(stack, y, x)` array with EPSG:4326 (latitude first) it is `"2,3"`;
+  the old value mapped longitude onto the stack dimension, and a 2D
+  slice of the array got an invalid mapping.
+  [`emit_mdim_vrt()`](https://hypertidy.github.io/vrtstack/reference/emit_mdim_vrt.md),
+  which wrote no mapping (GDAL then assumes `"1,2"`), gets the same
+  computed mapping.
+
+- Array children are written in the XSD’s order: the stack coordinate’s
+  `<Unit>` before its values, and
+  [`emit_mdim_vrt()`](https://hypertidy.github.io/vrtstack/reference/emit_mdim_vrt.md)’s
+  Unit / NoDataValue / Offset / Scale.
+
+### New features
+
+- New catalog-to-VRT emitter surface, revived from earlier design work:
+  a
+  [`mdim_sources()`](https://hypertidy.github.io/vrtstack/reference/mdim_sources.md)
+  table (one row per concat step, `kind = "band"` or `"array"`) and a
+  per-collection
+  [`mdim_signature()`](https://hypertidy.github.io/vrtstack/reference/mdim_signature.md)
+  (grid, SRS, dtype, array metadata) are fed to
+  [`emit_mdim_vrt()`](https://hypertidy.github.io/vrtstack/reference/emit_mdim_vrt.md),
+  which writes a multidimensional VRT without opening a file – the grid
+  comes from the signature (“identical grid or refuse”, no warping).
+  [`stac_sufficiency()`](https://hypertidy.github.io/vrtstack/reference/stac_sufficiency.md)
+  reports whether a parsed STAC item carries the metadata the emitter
+  needs, and
+  [`verify_vrt()`](https://hypertidy.github.io/vrtstack/reference/verify_vrt.md)
+  round-trips an emitted VRT through `gdal mdim info`. Design notes in
+  `inst/design/mdim-vrt-catalog-scoping.md`.
+
+- [`vrtstack()`](https://hypertidy.github.io/vrtstack/reference/vrtstack.md)
+  gains `metadata_from` (`"first"`, `"last"`, or an explicit source
+  path) to choose which source donates the coordinate units and
+  root-group provenance restored onto an auto-generated recipe
+  (`template = TRUE`).
+
+- The concat dimension may be any axis, not only axis 0, and need not be
+  named `"time"`:
+  [`mdim_template_extend()`](https://hypertidy.github.io/vrtstack/reference/mdim_template_extend.md)
+  takes the axis position from `DimensionRef` order. A regularly-spaced
+  concat coordinate is converted to explicit inline values when
+  `concat_values` are supplied.
+
+### Bug fixes
+
+- [`mdim_template_extend()`](https://hypertidy.github.io/vrtstack/reference/mdim_template_extend.md)
+  now gives a clear error when the concat dimension has no coordinate
+  array of the same name, instead of an opaque xml node-type error, and
+  validates inline-vs-regular coordinate values robustly.
+
+### Packaging
+
+- `.Rbuildignore` now excludes `.github` and local scratch directories.
+
+## vrtstack 0.2.0
+
+### Bug fixes
+
+- [`gdal_mdim_stack()`](https://hypertidy.github.io/vrtstack/reference/gdal_mdim_stack.md)
+  no longer derives the data-array name from a bare common filename
+  prefix, which could produce a numeric, invalid array name (e.g.
+  `200206` from a shared date). The resolver now takes the variable
+  token from the shared part of the names – the first identifier word of
+  the common prefix or the last of the common suffix, whichever carries
+  more letters (e.g. `analysed_sst` from GHRSST tiles, `claytotal` from
+  soil layers) – never a leading-digit name, and falls back to `band1`.
+  An explicit `array_name` still overrides. Band-description-based
+  naming is left as a later option.
+  ([\#1](https://github.com/hypertidy/vrtstack/issues/1))
+
+- [`gdal_mdim_stack()`](https://hypertidy.github.io/vrtstack/reference/gdal_mdim_stack.md)
+  now writes a
+  `<SourceSlab offset="0,0,0" count="1,nrow,ncol" step="1,1,1"/>` in
+  every source. Without the count, GDAL opens every source, in order, to
+  learn its shape on each read through the VRT (a HEAD and a header GET
+  per `/vsicurl/` COG), so even a one-step read of a long remote stack
+  touched every file. With it, a read opens only the sources it covers.
+  Same finding as mdsumner/raad.virtualize#14; see also
+  hypertidy/gdalxarray#39, which stops sparse selections being widened
+  to a covering read. The template-extend path in
+  [`vrtstack()`](https://hypertidy.github.io/vrtstack/reference/vrtstack.md)
+  already copied the count from its template. Tests added
+  (`tests/testthat/test-sourceslab.R`).
+
+### New features
+
+- New
+  [`graft_coord_units()`](https://hypertidy.github.io/vrtstack/reference/graft_coord_units.md)
+  and
+  [`graft_group_attrs()`](https://hypertidy.github.io/vrtstack/reference/graft_group_attrs.md)
+  restore metadata that `gdal mdim mosaic` drops from a recipe:
+  coordinate-array units (CF `units`, which the netCDF driver lifts into
+  the array Unit rather than an attribute) and invariant root-group
+  provenance attributes (title, source, references). Both are idempotent
+  and read the values from one source via `gdal mdim info`, or from a
+  supplied `units=`/`attrs=` vector that needs no GDAL. They are wired
+  into the `template = TRUE` path of
+  [`vrtstack()`](https://hypertidy.github.io/vrtstack/reference/vrtstack.md)
+  via an internal `mdim_recipe_xml()`, and become no-ops once GDAL
+  propagates the metadata itself.
+
+- New
+  [`vrtstack()`](https://hypertidy.github.io/vrtstack/reference/vrtstack.md)
+  is a single entry point with two construction paths that share one
+  concat-axis resolver:
+
+  - **from-scratch** (`template = NULL`) - the existing GeoTIFF/COG
+    behaviour, stacking 2D sources into a single new 3D array.
+  - **template-extend** (`template = <vrt>` or `template = TRUE`) -
+    fleshes out a small “first-n” multidimensional VRT to a full file
+    set, re-parameterising only the concat dimension and the per-array
+    `<Source>` lists. Coordinate arrays, slab geometry, and per-array
+    scale/offset/unit/attributes are carried through verbatim from the
+    template.
+
+- New
+  [`mdim_template_extend()`](https://hypertidy.github.io/vrtstack/reference/mdim_template_extend.md)
+  performs the recipe rewrite as a pure xml2 tree operation (no GDAL
+  required). It handles sources that themselves carry several arrays
+  (e.g. OISST `anom`/`err`/`ice`/`sst`): data arrays are detected
+  structurally as any `<Array>` owning a `<Source>`, and each array’s
+  `SourceArray` path and slab `count`/`step` are read from its first
+  source rather than assumed from the array name. The concat axis
+  position is taken from `DimensionRef` order, so it need not be axis 0.
+
+- New
+  [`resolve_concat()`](https://hypertidy.github.io/vrtstack/reference/resolve_concat.md)
+  turns a concat-axis spec (explicit vector, single-group regex over
+  basenames, function of basename, or date-parsing inputs) into axis
+  values, and is shared by both construction paths.
+
+- New
+  [`mdim_mosaic_xml()`](https://hypertidy.github.io/vrtstack/reference/mdim_mosaic_xml.md)
+  builds the first-n recipe via `gdal mdim mosaic` through `/vsimem/`,
+  so no template file need touch disk (requires gdalraster with the
+  `gdal_run` algorithm interface).
+
+### Minor improvements and fixes
+
+- Filename extraction now uses
+  [`stringr::str_match()`](https://stringr.tidyverse.org/reference/str_match.html)
+  instead of
+  [`regmatches()`](https://rdrr.io/r/base/regmatches.html)/[`regexec()`](https://rdrr.io/r/base/grep.html),
+  which silently dropped non-matches and misaligned rows against
+  `files`.
+
+- VRT construction and editing now go through xml2 rather than string
+  assembly, removing the hand-rolled XML escaping.
+
+- [`mdim_template_extend()`](https://hypertidy.github.io/vrtstack/reference/mdim_template_extend.md)
+  rejects `Date`/`POSIXct` `concat_values` with a clear message:
+  coordinate values must already be in the array’s declared units
+  (e.g. days-since-epoch). Encode them first via
+  `resolve_concat(origin=, unit=)` or read them from the source files.
+
+### Packaging
+
+- Declared `xml2`, `stringr`, `jsonlite` and `utils` in `Imports` (they
+  were used but undeclared, an `R CMD check` error).
+
+- Added continuous integration: a standard `R-CMD-check` matrix, and a
+  canary job that checks against a development GDAL build (hypertidy
+  `gdal-r-python:dev`), so changes in GDAL’s multidim surface are caught
+  early.
+
+### vrtstack (0.1.0)
+
+- [`gdal_mdim_stack()`](https://hypertidy.github.io/vrtstack/reference/gdal_mdim_stack.md)
+  and the convenience wrappers
+  [`vrt_time_stack()`](https://hypertidy.github.io/vrtstack/reference/vrt_time_stack.md),
+  [`vrt_depth_stack()`](https://hypertidy.github.io/vrtstack/reference/vrt_depth_stack.md),
+  and
+  [`vrt_regular_stack()`](https://hypertidy.github.io/vrtstack/reference/vrt_regular_stack.md)
+  for stacking 2D rasters into a multidimensional VRT along a new
+  dimension, with regular-axis detection, filename-based dimension
+  values, and `/vsicurl/` support.
