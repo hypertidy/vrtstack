@@ -19,6 +19,23 @@ skip_if_no_gdal_cli <- function() {
   if (!ok) testthat::skip("gdal_run() requires GDAL >= 3.11.3")
 }
 
+# Evaluate a gdal_run()-backed expression, but skip (not fail) when the error
+# is a CLI-capability gap rather than a real defect. A version check is not
+# enough: some builds report GDAL >= 3.11.3 yet cannot instantiate the unified
+# CLI algorithms (seen on Windows: "failed to instantiate CLI algorithm from
+# path"). Skipping only on the real call's capability errors means capable
+# platforms still run the assertions -- no silent over-skip.
+skip_on_gdal_cli_error <- function(expr) {
+  res <- tryCatch(expr, error = function(e) e)
+  if (inherits(res, "error")) {
+    msg <- conditionMessage(res)
+    if (grepl("requires GDAL|instantiate", msg, ignore.case = TRUE))
+      testthat::skip(paste("GDAL CLI unavailable:", msg))
+    stop(res)                       # a genuine error still fails the test
+  }
+  res
+}
+
 # Small on-disk GeoTIFFs to exercise the file-probing paths without network.
 # EPSG:4326, 0.25-degree grid, single Int16 band, optional NoData.
 make_tifs <- function(names,
