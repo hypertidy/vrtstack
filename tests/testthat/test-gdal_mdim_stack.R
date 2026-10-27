@@ -53,7 +53,9 @@ test_that("SRS carries the data-axis-to-SRS-axis mapping, and NoData is set", {
   doc <- xml2::read_xml(xml)
 
   srs <- xml2::xml_find_first(doc, ".//Array[@name='clay']/SRS")
-  expect_equal(xml2::xml_attr(srs, "dataAxisToSRSAxisMapping"), "2,1")
+  # EPSG:4326 WKT declares latitude first; latitude is on dim 2 (y) and
+  # longitude on dim 3 (x) of the (depth, y, x) array.
+  expect_equal(xml2::xml_attr(srs, "dataAxisToSRSAxisMapping"), "2,3")
   nd <- xml2::xml_find_first(doc, ".//Array[@name='clay']/NoDataValue")
   expect_equal(xml2::xml_text(nd), "-999")
 })
