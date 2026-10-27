@@ -7,6 +7,24 @@
   with a grouped reference index, and a README section covering all three. The
   GDAL >= 3.11.3 requirement for the `gdal_run()`-backed paths is documented.
 
+## Bug fixes
+
+* `gdal_mdim_stack()` (and the `vrt_*_stack()` wrappers) now copy the source
+  band's scale, offset and unit type onto the data array. Packed bands such
+  as GHRSST MUR `analysed_sst` (Int16, scale 0.001, offset 25) previously
+  read back as raw counts through the VRT's unscaled view.
+
+* The `<SRS>` `dataAxisToSRSAxisMapping` is now computed from the CRS's WKT
+  axis order instead of being fixed at `"2,1"`. For a `(stack, y, x)` array
+  with EPSG:4326 (latitude first) it is `"2,3"`; the old value mapped
+  longitude onto the stack dimension, and a 2D slice of the array got an
+  invalid mapping. `emit_mdim_vrt()`, which wrote no mapping (GDAL then
+  assumes `"1,2"`), gets the same computed mapping.
+
+* Array children are written in the XSD's order: the stack coordinate's
+  `<Unit>` before its values, and `emit_mdim_vrt()`'s
+  Unit / NoDataValue / Offset / Scale.
+
 ## New features
 
 * New catalog-to-VRT emitter surface, revived from earlier design work: a
