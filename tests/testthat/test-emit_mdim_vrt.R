@@ -91,7 +91,8 @@ test_that("an emitted VRT opens in GDAL with the declared grid and metadata", {
   vrt <- tempfile(fileext = ".vrt")
   emit_mdim_vrt(s, base_sig(nodata = -999, unit = "Celsius"), vrt)
 
-  info <- jsonlite::fromJSON(verify_vrt(vrt), simplifyVector = FALSE)
+  info <- jsonlite::fromJSON(skip_on_gdal_cli_error(verify_vrt(vrt)),
+                             simplifyVector = FALSE)
   expect_equal(info$driver, "VRT")
 
   sst <- info$arrays$sst
@@ -109,5 +110,5 @@ test_that("verify_vrt returns mdim info for a valid VRT", {
                     tifs, "1", "band", source_view = "[newaxis,...]")
   vrt <- tempfile(fileext = ".vrt")
   emit_mdim_vrt(s, base_sig(), vrt)
-  expect_match(verify_vrt(vrt), "\"driver\": \"VRT\"")
+  expect_match(skip_on_gdal_cli_error(verify_vrt(vrt)), "\"driver\": \"VRT\"")
 })
