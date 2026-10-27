@@ -23,8 +23,11 @@ Imports:
     utils,
     xml2
 Suggests:
+    knitr,
+    rmarkdown,
     vapour,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/hypertidy/vrtstack
 BugReports: https://github.com/hypertidy/vrtstack/issues

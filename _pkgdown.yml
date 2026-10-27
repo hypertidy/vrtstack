@@ -1,0 +1,33 @@
+url: https://hypertidy.github.io/vrtstack
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Stack 2D rasters along a new dimension
+  desc: Build a new axis from a collection of 2D rasters (COGs, GeoTIFFs).
+  contents:
+  - gdal_mdim_stack
+  - vrt_time_stack
+  - vrt_depth_stack
+  - vrt_regular_stack
+
+- title: Extend a multidimensional recipe
+  desc: Flesh a small "first-n" mdim VRT out to a full file set, and repair
+    metadata that mosaic drops.
+  contents:
+  - vrtstack
+  - mdim_template_extend
+  - resolve_concat
+  - graft_coord_units
+  - graft_group_attrs
+
+- title: Emit a VRT from a catalog signature
+  desc: Build a VRT from a sources table and a grid signature, without opening
+    a file.
+  contents:
+  - mdim_sources
+  - mdim_signature
+  - stac_sufficiency
+  - emit_mdim_vrt
+  - verify_vrt

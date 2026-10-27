@@ -1,5 +1,12 @@
 # vrtstack (development version)
 
+## Documentation
+
+* New vignette `vignette("vrtstack")` walking the three entry points
+  (from-scratch stacking, recipe extension, catalog emitter), a pkgdown site
+  with a grouped reference index, and a README section covering all three. The
+  GDAL >= 3.11.3 requirement for the `gdal_run()`-backed paths is documented.
+
 ## New features
 
 * New catalog-to-VRT emitter surface, revived from earlier design work: a
