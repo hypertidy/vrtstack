@@ -2,6 +2,16 @@
 
 ## New features
 
+* New catalog-to-VRT emitter surface, revived from earlier design work: a
+  `mdim_sources()` table (one row per concat step, `kind = "band"` or
+  `"array"`) and a per-collection `mdim_signature()` (grid, SRS, dtype, array
+  metadata) are fed to `emit_mdim_vrt()`, which writes a multidimensional VRT
+  without opening a file -- the grid comes from the signature ("identical grid
+  or refuse", no warping). `stac_sufficiency()` reports whether a parsed STAC
+  item carries the metadata the emitter needs, and `verify_vrt()` round-trips
+  an emitted VRT through `gdal mdim info`. Design notes in
+  `inst/design/mdim-vrt-catalog-scoping.md`.
+
 * `vrtstack()` gains `metadata_from` (`"first"`, `"last"`, or an explicit source
   path) to choose which source donates the coordinate units and root-group
   provenance restored onto an auto-generated recipe (`template = TRUE`).
